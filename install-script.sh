@@ -25,7 +25,7 @@ if [ -d "$BATMAN_DIR" ]; then
     echo "  → $BATMAN_DIR already exists, pulling latest..."
     git -C "$BATMAN_DIR" pull
 else
-    git clone git@github.com:Navigate-IO/BATMAN-Script.git "$BATMAN_DIR"
+    git clone https://github.com/Navigate-IO/BATMAN-Script.git "$BATMAN_DIR"
 fi
 
 echo "[3/3] Cloning Recieve-Transfer-MCS-Test..."
