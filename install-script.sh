@@ -19,6 +19,8 @@ if [ -d "$DRIVER_DIR" ]; then
 else
     git clone https://github.com/Navigate-IO/morse-micro-64bit.git "$DRIVER_DIR"
 fi
+echo "  Initializing submodules..."
+git -C "$DRIVER_DIR" submodule update --init --recursive
 
 echo "[2/3] Cloning BATMAN-Script..."
 if [ -d "$BATMAN_DIR" ]; then
