@@ -157,6 +157,7 @@ RestartSec=3
 EOF
 
 # Watchdog service: monitors wlan1 and recovers from unplug/replug
+sudo mkdir -p /opt/mcs-test
 sudo tee /opt/mcs-test/wlan1-watchdog.sh > /dev/null <<'WATCHDOG'
 #!/bin/bash
 LAST_STATE="unknown"
