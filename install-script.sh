@@ -148,7 +148,46 @@ sudo systemctl unmask hostapd
 sudo systemctl enable hostapd
 sudo systemctl enable dnsmasq
 
-echo "RaspAP base configured. Deploy script will set the static IP."
+# Add auto-restart override for hostapd (survives USB dongle resets)
+sudo mkdir -p /etc/systemd/system/hostapd.service.d
+sudo tee /etc/systemd/system/hostapd.service.d/restart.conf > /dev/null <<EOF
+[Service]
+Restart=on-failure
+RestartSec=3
+EOF
+
+# Watchdog service: monitors wlan1 and brings it back up if it drops
+sudo tee /opt/mcs-test/wlan1-watchdog.sh > /dev/null <<'WATCHDOG'
+#!/bin/bash
+while true; do
+    if ! ip link show wlan1 2>/dev/null | grep -q "state UP"; then
+        ip link set wlan1 up 2>/dev/null
+        systemctl restart hostapd 2>/dev/null
+    fi
+    sleep 5
+done
+WATCHDOG
+sudo chmod +x /opt/mcs-test/wlan1-watchdog.sh
+
+sudo tee /etc/systemd/system/wlan1-watchdog.service > /dev/null <<EOF
+[Unit]
+Description=wlan1 AP watchdog
+After=network-online.target hostapd.service
+
+[Service]
+Type=simple
+ExecStart=/opt/mcs-test/wlan1-watchdog.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable wlan1-watchdog.service
+
+echo "RaspAP base configured with auto-restart and wlan1 watchdog."
 
 echo ""
 echo "========================================="
