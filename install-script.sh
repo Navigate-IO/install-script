@@ -156,15 +156,41 @@ Restart=on-failure
 RestartSec=3
 EOF
 
-# Watchdog service: monitors wlan1 and brings it back up if it drops
+# Watchdog service: monitors wlan1 and recovers from unplug/replug
 sudo tee /opt/mcs-test/wlan1-watchdog.sh > /dev/null <<'WATCHDOG'
 #!/bin/bash
+LAST_STATE="unknown"
+
 while true; do
-    if ! ip link show wlan1 2>/dev/null | grep -q "state UP"; then
-        ip link set wlan1 up 2>/dev/null
-        systemctl restart hostapd 2>/dev/null
+    if ip link show wlan1 &>/dev/null; then
+        # Interface exists
+        if ! ip link show wlan1 | grep -q "state UP"; then
+            # Interface exists but is down — bring it up
+            ip link set wlan1 up 2>/dev/null
+            sleep 2
+            systemctl restart hostapd 2>/dev/null
+            systemctl restart dnsmasq 2>/dev/null
+            echo "[watchdog] wlan1 was down, brought up and restarted hostapd/dnsmasq"
+            LAST_STATE="recovered"
+        elif [ "$LAST_STATE" = "missing" ]; then
+            # Interface just came back after being unplugged
+            ip link set wlan1 up 2>/dev/null
+            sleep 2
+            systemctl restart hostapd 2>/dev/null
+            systemctl restart dnsmasq 2>/dev/null
+            echo "[watchdog] wlan1 reappeared after unplug, restarted hostapd/dnsmasq"
+            LAST_STATE="recovered"
+        else
+            LAST_STATE="up"
+        fi
+    else
+        # Interface doesn't exist (dongle unplugged)
+        if [ "$LAST_STATE" != "missing" ]; then
+            echo "[watchdog] wlan1 disappeared (dongle unplugged?), waiting for replug..."
+        fi
+        LAST_STATE="missing"
     fi
-    sleep 5
+    sleep 3
 done
 WATCHDOG
 sudo chmod +x /opt/mcs-test/wlan1-watchdog.sh
