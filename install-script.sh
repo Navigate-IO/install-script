@@ -213,6 +213,7 @@ EOF
 
 sudo systemctl daemon-reload
 sudo systemctl enable wlan1-watchdog.service
+sudo systemctl start wlan1-watchdog.service
 
 echo "RaspAP base configured with auto-restart and wlan1 watchdog."
 
