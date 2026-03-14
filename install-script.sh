@@ -67,6 +67,27 @@ echo "  Installing firmware to /lib/firmware/morse..."
 sudo mkdir -p /lib/firmware/morse
 sudo cp "$FIRMWARE_DIR"/*.bin /lib/firmware/morse/
 
+# Install device tree overlays for SX-SDMAH HAT
+echo "  Installing device tree overlays..."
+sudo cp "$FIRMWARE_DIR"/mm_wlan.dtbo /boot/overlays/
+sudo cp "$FIRMWARE_DIR"/morse-ps.dtbo /boot/overlays/
+sudo cp "$FIRMWARE_DIR"/sdio.dtbo /boot/overlays/
+
+# Add overlay config to /boot/config.txt if not already present
+if ! grep -q "mm_wlan" /boot/config.txt 2>/dev/null; then
+    echo "  Adding Morse Micro overlays to /boot/config.txt..."
+    sudo tee -a /boot/config.txt > /dev/null <<DTEOF
+
+# Morse Micro SX-SDMAH HAT
+dtoverlay=sdio
+dtoverlay=mm_wlan
+dtoverlay=morse-ps
+gpio=16=ip,pu
+DTEOF
+else
+    echo "  → Morse overlays already in /boot/config.txt"
+fi
+
 # ─── 2. Build Morse Micro driver ───
 echo ""
 echo "========================================="
