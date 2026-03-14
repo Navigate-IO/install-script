@@ -107,6 +107,7 @@ echo "Building modules..."
 make -C "$KBUILD" M="$DRIVER_DIR" \
     CONFIG_WLAN_VENDOR_MORSE=m \
     CONFIG_MORSE_VENDOR_COMMAND=y \
+    CONFIG_MORSE_SDIO=y \
     modules V=1
 
 for mod in "$DRIVER_DIR/dot11ah/dot11ah.ko" "$DRIVER_DIR/morse.ko"; do
