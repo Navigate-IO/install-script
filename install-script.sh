@@ -95,7 +95,12 @@ else
     echo "  → brcmfmac already blacklisted"
 fi
 
-# ─── 2. Build Morse Micro driver ───
+# Ensure Morse chip is always wlan0 and USB dongle is wlan1
+echo "  Setting up udev rules for interface naming..."
+sudo tee /etc/udev/rules.d/70-wifi-names.rules > /dev/null <<UDEVEOF
+SUBSYSTEM=="net", ACTION=="add", DRIVERS=="morse_sdio", NAME="wlan0"
+SUBSYSTEM=="net", ACTION=="add", DRIVERS=="mt76x0u", NAME="wlan1"
+UDEVEOF
 echo ""
 echo "========================================="
 echo "[6/7] Building Morse Micro driver"
