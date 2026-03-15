@@ -87,20 +87,22 @@ else
     echo "  → Morse overlays already in /boot/firmware/config.txt"
 fi
 
-# Blacklist Broadcom WiFi so Morse chip gets wlan0
+# Blacklist Broadcom WiFi so it doesn't interfere
 if [ ! -f /etc/modprobe.d/blacklist-brcm.conf ]; then
-    echo "  Blacklisting brcmfmac so Morse gets wlan0..."
+    echo "  Blacklisting brcmfmac..."
     echo "blacklist brcmfmac" | sudo tee /etc/modprobe.d/blacklist-brcm.conf > /dev/null
 else
     echo "  → brcmfmac already blacklisted"
 fi
 
-# Ensure Morse chip is always wlan0 and USB dongle is wlan1
+# udev rule: Morse chip (SDIO/mmc1) = wlan0, USB dongle (MediaTek) = wlan1
 echo "  Setting up udev rules for interface naming..."
 sudo tee /etc/udev/rules.d/70-wifi-names.rules > /dev/null <<UDEVEOF
-SUBSYSTEM=="net", ACTION=="add", DRIVERS=="morse_sdio", NAME="wlan0"
-SUBSYSTEM=="net", ACTION=="add", DRIVERS=="mt76x0u", NAME="wlan1"
+SUBSYSTEM=="net", ACTION=="add", DEVPATH=="*mmc1*", NAME="wlan0"
+SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="0e8d", NAME="wlan1"
 UDEVEOF
+
+# ─── 2. Build Morse Micro driver ───
 echo ""
 echo "========================================="
 echo "[6/7] Building Morse Micro driver"
@@ -222,7 +224,6 @@ while true; do
     if ip link show wlan1 &>/dev/null; then
         # Interface exists
         if ! ip link show wlan1 | grep -q "state UP"; then
-            # Interface exists but is down — bring it up
             ip link set wlan1 up 2>/dev/null
             sleep 2
             systemctl restart hostapd 2>/dev/null
@@ -230,7 +231,6 @@ while true; do
             echo "[watchdog] wlan1 was down, brought up and restarted hostapd/dnsmasq"
             LAST_STATE="recovered"
         elif [ "$LAST_STATE" = "missing" ]; then
-            # Interface just came back after being unplugged
             ip link set wlan1 up 2>/dev/null
             sleep 2
             systemctl restart hostapd 2>/dev/null
@@ -241,7 +241,6 @@ while true; do
             LAST_STATE="up"
         fi
     else
-        # Interface doesn't exist (dongle unplugged)
         if [ "$LAST_STATE" != "missing" ]; then
             echo "[watchdog] wlan1 disappeared (dongle unplugged?), waiting for replug..."
         fi
