@@ -87,6 +87,14 @@ else
     echo "  → Morse overlays already in /boot/firmware/config.txt"
 fi
 
+# Blacklist Broadcom WiFi so Morse chip gets wlan0
+if [ ! -f /etc/modprobe.d/blacklist-brcm.conf ]; then
+    echo "  Blacklisting brcmfmac so Morse gets wlan0..."
+    echo "blacklist brcmfmac" | sudo tee /etc/modprobe.d/blacklist-brcm.conf > /dev/null
+else
+    echo "  → brcmfmac already blacklisted"
+fi
+
 # ─── 2. Build Morse Micro driver ───
 echo ""
 echo "========================================="
