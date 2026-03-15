@@ -100,6 +100,13 @@ if [ ! -d "$KBUILD" ]; then
     exit 1
 fi
 
+# Patch firmware version check to match EVI firmware (52.0.0)
+# TODO: Remove this patch when matching firmware for 1.16.4 is available
+echo "Patching firmware version compatibility..."
+sudo sed -i 's/#define MORSE_CMD_SEMVER_MAJOR\t[0-9]*/#define MORSE_CMD_SEMVER_MAJOR\t52/' "$DRIVER_DIR/morse_commands.h"
+sudo sed -i 's/#define MORSE_CMD_SEMVER_MINOR\t[0-9]*/#define MORSE_CMD_SEMVER_MINOR\t0/' "$DRIVER_DIR/morse_commands.h"
+sudo sed -i 's/#define MORSE_CMD_SEMVER_PATCH\t[0-9]*/#define MORSE_CMD_SEMVER_PATCH\t0/' "$DRIVER_DIR/morse_commands.h"
+
 echo "Cleaning previous build..."
 make -C "$KBUILD" M="$DRIVER_DIR" clean
 
@@ -108,6 +115,7 @@ make -C "$KBUILD" M="$DRIVER_DIR" \
     CONFIG_WLAN_VENDOR_MORSE=m \
     CONFIG_MORSE_VENDOR_COMMAND=y \
     CONFIG_MORSE_SDIO=y \
+    CFLAGS_MODULE="-DCONFIG_MORSE_SDIO" \
     modules V=1
 
 for mod in "$DRIVER_DIR/dot11ah/dot11ah.ko" "$DRIVER_DIR/morse.ko"; do
@@ -139,7 +147,7 @@ echo "Loading dot11ah.ko..."
 sudo insmod "$DRIVER_DIR/dot11ah/dot11ah.ko"
 
 echo "Loading morse.ko..."
-sudo insmod "$DRIVER_DIR/morse.ko"
+sudo insmod "$DRIVER_DIR/morse.ko" country=US
 
 echo ""
 echo "========================================="
