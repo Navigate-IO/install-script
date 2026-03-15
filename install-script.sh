@@ -5,7 +5,6 @@ set -euo pipefail
 BATMAN_DIR="/home/pi/BATMAN-Script"
 MCS_TEST_DIR="/home/pi/Recieve-Transfer-MCS-Test"
 DRONE_DIR="/home/pi/drone-public"
-FIRMWARE_DIR="/home/pi/morse-firmware"
 SX_SDMAH_DIR="/home/pi/sx-sdmah"
 
 echo "========================================="
@@ -14,7 +13,7 @@ echo "========================================="
 
 # ─── 0. Install system dependencies ───
 echo ""
-echo "[0/6] Installing system dependencies..."
+echo "[0/5] Installing system dependencies..."
 sudo apt update
 sudo apt install -y iperf3 batctl hostapd dnsmasq dhcpcd5
 
@@ -31,7 +30,7 @@ fi
 
 # ─── 1. Clone repositories ───
 echo ""
-echo "[1/6] Cloning BATMAN-Script..."
+echo "[1/5] Cloning BATMAN-Script..."
 if [ -d "$BATMAN_DIR" ]; then
     echo "  → $BATMAN_DIR already exists, pulling latest..."
     git -C "$BATMAN_DIR" pull
@@ -39,7 +38,7 @@ else
     git clone https://github.com/Navigate-IO/BATMAN-Script.git "$BATMAN_DIR"
 fi
 
-echo "[2/6] Cloning Recieve-Transfer-MCS-Test..."
+echo "[2/5] Cloning Recieve-Transfer-MCS-Test..."
 if [ -d "$MCS_TEST_DIR" ]; then
     echo "  → $MCS_TEST_DIR already exists, pulling latest..."
     git -C "$MCS_TEST_DIR" pull
@@ -47,7 +46,7 @@ else
     git clone https://github.com/Navigate-IO/Recieve-Transfer-MCS-Test.git "$MCS_TEST_DIR"
 fi
 
-echo "[3/6] Cloning drone-public..."
+echo "[3/5] Cloning drone-public..."
 if [ -d "$DRONE_DIR" ]; then
     echo "  → $DRONE_DIR already exists, pulling latest..."
     git -C "$DRONE_DIR" pull
@@ -55,51 +54,10 @@ else
     git clone https://github.com/Navigate-IO/drone-public.git "$DRONE_DIR"
 fi
 
-echo "[4/6] Cloning morse-firmware..."
-if [ -d "$FIRMWARE_DIR" ]; then
-    echo "  → $FIRMWARE_DIR already exists, pulling latest..."
-    git -C "$FIRMWARE_DIR" pull
-else
-    git clone https://github.com/Navigate-IO/morse-firmware.git "$FIRMWARE_DIR"
-fi
-
-# Install firmware to /lib/firmware/morse
-echo "  Installing firmware to /lib/firmware/morse..."
-sudo mkdir -p /lib/firmware/morse
-sudo cp "$FIRMWARE_DIR"/*.bin /lib/firmware/morse/
-
-# Install device tree overlays for SX-SDMAH HAT
-echo "  Installing device tree overlays..."
-sudo cp "$FIRMWARE_DIR"/mm_wlan.dtbo "$FIRMWARE_DIR"/morse-ps.dtbo "$FIRMWARE_DIR"/sdio.dtbo /boot/overlays/ 2>/dev/null || true
-sudo cp "$FIRMWARE_DIR"/mm_wlan.dtbo "$FIRMWARE_DIR"/morse-ps.dtbo "$FIRMWARE_DIR"/sdio.dtbo /boot/firmware/overlays/ 2>/dev/null || true
-
-# Add overlay config to /boot/firmware/config.txt if not already present
-if ! grep -q "mm_wlan" /boot/firmware/config.txt 2>/dev/null; then
-    echo "  Adding Morse Micro overlays to /boot/firmware/config.txt..."
-    sudo tee -a /boot/firmware/config.txt > /dev/null <<DTEOF
-
-# Morse Micro SX-SDMAH HAT
-dtoverlay=sdio
-dtoverlay=mm_wlan
-dtoverlay=morse-ps
-gpio=16=ip,pu
-DTEOF
-else
-    echo "  → Morse overlays already in /boot/firmware/config.txt"
-fi
-
-# Blacklist Broadcom WiFi so it doesn't interfere
-if [ ! -f /etc/modprobe.d/blacklist-brcm.conf ]; then
-    echo "  Blacklisting brcmfmac..."
-    echo "blacklist brcmfmac" | sudo tee /etc/modprobe.d/blacklist-brcm.conf > /dev/null
-else
-    echo "  → brcmfmac already blacklisted"
-fi
-
 # ─── 2. Load Morse Micro driver via sx-sdmah ───
 echo ""
 echo "========================================="
-echo "[5/6] Loading Morse Micro driver"
+echo "[4/5] Loading Morse Micro driver"
 echo "========================================="
 
 if [ ! -d "$SX_SDMAH_DIR" ]; then
@@ -129,7 +87,7 @@ lsmod | grep -E "morse|dot11ah" || echo "WARNING: Modules not showing in lsmod"
 # ─── 3. Configure RaspAP base (AP on wlan1) ───
 echo ""
 echo "========================================="
-echo "[6/6] Configuring RaspAP (wlan1)"
+echo "[5/5] Configuring RaspAP (wlan1)"
 echo "========================================="
 
 sudo systemctl stop hostapd 2>/dev/null || true
