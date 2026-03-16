@@ -55,10 +55,22 @@ else
     git clone https://github.com/Navigate-IO/drone-public.git "$DRONE_DIR"
 fi
 
-# ─── 2. Load Morse Micro driver via sx-sdmah ───
+# ─── 2. Set up udev rules for interface naming ───
 echo ""
 echo "========================================="
-echo "[4/5] Loading Morse Micro driver"
+echo "[4/6] Setting up udev rules"
+echo "========================================="
+echo "  Morse (SDIO/mmc1) → wlan0, USB dongle (MediaTek) → wlan1"
+sudo tee /etc/udev/rules.d/70-wifi-names.rules > /dev/null <<UDEVEOF
+SUBSYSTEM=="net", ACTION=="add", DEVPATH=="*mmc1*", NAME="wlan0"
+SUBSYSTEM=="net", ACTION=="add", ATTRS{idVendor}=="0e8d", NAME="wlan1"
+UDEVEOF
+sudo udevadm control --reload-rules
+
+# ─── 3. Load Morse Micro driver via sx-sdmah ───
+echo ""
+echo "========================================="
+echo "[5/6] Loading Morse Micro driver"
 echo "========================================="
 
 if [ ! -d "$SX_SDMAH_DIR" ]; then
@@ -85,10 +97,10 @@ echo "  Verifying loaded modules..."
 echo "========================================="
 lsmod | grep -E "morse|dot11ah" || echo "WARNING: Modules not showing in lsmod"
 
-# ─── 3. Configure RaspAP base (AP on wlan1) ───
+# ─── 4. Configure RaspAP base (AP on wlan1) ───
 echo ""
 echo "========================================="
-echo "[5/5] Configuring RaspAP (wlan1)"
+echo "[6/6] Configuring RaspAP (wlan1)"
 echo "========================================="
 
 sudo systemctl stop hostapd 2>/dev/null || true
