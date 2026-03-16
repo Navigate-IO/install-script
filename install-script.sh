@@ -183,11 +183,14 @@ sudo mkdir -p /opt/mcs-test
 sudo tee /opt/mcs-test/wlan1-watchdog.sh > /dev/null <<'WATCHDOG'
 #!/bin/bash
 LAST_STATE="unknown"
+WLAN1_IP="192.168.40.20/16"
 
 while true; do
     if ip link show wlan1 &>/dev/null; then
         if ! ip link show wlan1 | grep -q "state UP"; then
             ip link set wlan1 up 2>/dev/null
+            ip addr flush dev wlan1 2>/dev/null
+            ip addr add "$WLAN1_IP" dev wlan1 2>/dev/null
             sleep 2
             systemctl restart hostapd 2>/dev/null
             systemctl restart dnsmasq 2>/dev/null
@@ -195,12 +198,20 @@ while true; do
             LAST_STATE="recovered"
         elif [ "$LAST_STATE" = "missing" ]; then
             ip link set wlan1 up 2>/dev/null
+            ip addr flush dev wlan1 2>/dev/null
+            ip addr add "$WLAN1_IP" dev wlan1 2>/dev/null
             sleep 2
             systemctl restart hostapd 2>/dev/null
             systemctl restart dnsmasq 2>/dev/null
             echo "[watchdog] wlan1 reappeared after unplug, restarted hostapd/dnsmasq"
             LAST_STATE="recovered"
         else
+            # Ensure IP is always set even in steady state
+            if ! ip addr show wlan1 | grep -q "192.168.40.20"; then
+                ip addr flush dev wlan1 2>/dev/null
+                ip addr add "$WLAN1_IP" dev wlan1 2>/dev/null
+                echo "[watchdog] wlan1 missing IP, re-applied $WLAN1_IP"
+            fi
             LAST_STATE="up"
         fi
     else
@@ -235,6 +246,8 @@ sudo systemctl start wlan1-watchdog.service
 
 # Start AP
 sudo ip link set wlan1 up 2>/dev/null || true
+sudo ip addr flush dev wlan1 2>/dev/null || true
+sudo ip addr add 192.168.40.20/16 dev wlan1
 sudo systemctl restart hostapd
 sudo systemctl restart dnsmasq
 
