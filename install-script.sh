@@ -19,13 +19,10 @@ sudo apt install -y iperf3 batctl hostapd dnsmasq dhcpcd5
 
 # Install Liberica JDK 17 (OpenJDK 17 not available for armhf on Bullseye)
 if ! java -version 2>&1 | grep -q '"17'; then
-    echo "  Installing Liberica JDK 17..."
-    wget -q https://download.bell-sw.com/pki/GPG-KEY-bellsoft -O /tmp/bellsoft.key
-    sudo gpg --dearmor -o /usr/share/keyrings/bellsoft.gpg /tmp/bellsoft.key
-    echo "deb [signed-by=/usr/share/keyrings/bellsoft.gpg] https://apt.bell-sw.com/ stable main" | sudo tee /etc/apt/sources.list.d/bellsoft.list
-    rm -f /tmp/bellsoft.key
-    sudo apt update
-    sudo apt install -y bellsoft-java17
+    echo "  Installing Liberica JDK 17 (direct .deb)..."
+    sudo wget -q https://download.bell-sw.com/java/17.0.17+11/bellsoft-jdk17.0.17+11-linux-arm32-vfp-hflt.deb -O /tmp/bellsoft-jdk17.deb
+    sudo apt install -y /tmp/bellsoft-jdk17.deb
+    rm -f /tmp/bellsoft-jdk17.deb
 else
     echo "  → JDK 17 already installed"
 fi
