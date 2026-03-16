@@ -104,6 +104,17 @@ if [ ! -f "$SX_SDMAH_DIR/load_driver.sh" ]; then
     exit 1
 fi
 
+# Patch S1G AP config to use 1MHz (op_class=68, channel=37 = 920.5MHz)
+S1G_AP_CONF="$SX_SDMAH_DIR/conf/US/ap_halow_open.conf"
+if [ -f "$S1G_AP_CONF" ]; then
+    echo "  Patching S1G AP config to 1MHz (op_class=68, channel=37)..."
+    # Comment out existing op_class and channel lines
+    sudo sed -i 's/^op_class=/#op_class=/' "$S1G_AP_CONF"
+    sudo sed -i 's/^channel=/#channel=/' "$S1G_AP_CONF"
+    # Add 1MHz config at the end (before ieee80211 lines)
+    sudo sed -i '/^ieee80211h/i op_class=68\nchannel=37' "$S1G_AP_CONF"
+fi
+
 echo "Running load_driver.sh..."
 cd "$SX_SDMAH_DIR"
 sudo bash load_driver.sh
