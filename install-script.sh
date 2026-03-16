@@ -81,6 +81,11 @@ sleep 2
 
 # Retrigger udev so interfaces come back with correct names
 sudo udevadm trigger --action=add --subsystem-match=net
+sleep 3
+
+# Reload USB dongle driver (mt76 doesn't auto-reload after rmmod)
+echo "  Reloading USB dongle driver..."
+sudo modprobe mt76x0u
 sleep 5
 
 # ─── 4. Load Morse Micro driver ───
