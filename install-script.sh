@@ -158,6 +158,18 @@ sudo systemctl unmask hostapd
 sudo systemctl enable hostapd
 sudo systemctl enable dnsmasq
 
+# Configure wlan1 static IP via dhcpcd
+sudo sed -i '/^# .* Pi - AP interface$/,/^nohook wpa_supplicant$/d' /etc/dhcpcd.conf 2>/dev/null || true
+sudo sed -i '/^interface wlan1$/,/^nohook wpa_supplicant$/d' /etc/dhcpcd.conf 2>/dev/null || true
+sudo tee -a /etc/dhcpcd.conf > /dev/null <<EOF
+
+# AP interface
+interface wlan1
+static ip_address=192.168.40.20/16
+nohook wpa_supplicant
+EOF
+sudo systemctl restart dhcpcd 2>/dev/null || true
+
 # Auto-restart override for hostapd
 sudo mkdir -p /etc/systemd/system/hostapd.service.d
 sudo tee /etc/systemd/system/hostapd.service.d/restart.conf > /dev/null <<EOF
